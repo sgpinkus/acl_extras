@@ -65,6 +65,24 @@ class AclExtrasShell extends AppShell {
 	}
 
 /**
+ * Clean broken record out of the ARO table
+ *
+ * @return void
+ **/
+	public function aro_clean() {
+		$this->AclExtras->aro_clean($this->params);
+	}
+
+/**
+ * Clean broken record out of the ACO table
+ *
+ * @return void
+ **/
+	public function aco_clean() {
+		$this->AclExtras->aco_clean($this->params);
+	}
+
+/**
  * Updates the Aco Tree with new controller actions.
  *
  * @return void
@@ -93,6 +111,12 @@ class AclExtrasShell extends AppShell {
 				'help' => __('Perform a full sync on the ACO table.' .
 					'Will create new ACOs or missing controllers and actions.' .
 					'Will also remove orphaned entries that no longer have a matching controller/action')
+			))->addSubcommand('aro_clean', array(
+				'help' => __('Will remove orphaned ARO entries.' .
+					'Will not remove alias only ARO entries, even if there are no permissions attached to them.')
+			))->addSubcommand('aco_clean', array(
+				'help' => __('Will remove orphaned ACO entries.' .
+					'Will not remove alias only ACO entries, even if there are no permissions attached to them.')
 			))->addSubcommand('verify', array(
 				'help' => __('Verify the tree structure of either your Aco or Aro Trees'),
 				'parser' => array(

@@ -77,6 +77,7 @@ class AclExtras extends CakeObject {
 		$this->Acl = new AclComponent($collection);
 		$this->Acl->startup($controller);
 		$this->Aco = $this->Acl->Aco;
+		$this->Aro = $this->Acl->Aro;
 		$this->controller = $controller;
 	}
 
@@ -105,6 +106,58 @@ class AclExtras extends CakeObject {
 		$this->_clean = true;
 		$this->aco_update($params);
 	}
+
+/**
+ * Remove broken entity references out of the ARO table.
+ *
+ * @return bool Success
+ **/
+	public function aro_clean() {
+		return $this->_clean('Aro');
+	}
+	
+/**
+ * Remove broken entity references out of the ACO table.
+ *
+ * @return bool Success
+ **/
+	public function aco_clean() {
+		return $this->_clean('Aco');
+	}
+	
+	
+/**
+ * Remove broken entity references out of the ARO or ACO table.
+ *
+ * @return bool Success
+ **/
+	protected function _clean($type) {
+		$models = $this->{$type}->find('list', array('fields' => 'model', 'recursive' => 0, 'distinct' => true));
+		$models = array_filter(array_unique($models), function($value){return (bool)$value;});
+		$aclTable = strtolower($type) . "s";
+		$queryTemplate = "DELETE %s FROM %s LEFT JOIN %s ON (%s.foreign_key = %s.%s) WHERE %s.model = '%s' AND %s.%s IS NULL";
+		
+		foreach ($models as $model) {
+			App::uses($model, 'Model');
+			if(App::load($model)) {
+				$dBModel = new $model();
+				$modelTable = $dBModel->table;
+				$modelKey = isset($dBModel->primaryKey) ? $dBModel->primaryKey : 'id';
+				$query = sprintf($queryTemplate, $aclTable, $aclTable, $modelTable, $aclTable, $modelTable, $modelKey, $aclTable, $model, $modelTable, $modelKey);
+				$result = $this->Aro->query($query);
+
+				if ($result === false) {
+					$this->out(__('Failed deleting %s records for model "%s"', $type, $model));
+					return false;
+				}
+			} else {
+				$this->out(__('Could not load model "%s"', $model));
+			}
+		}
+		$this->out(__('<success>%s Clean Complete</success>', $type));
+		return true;
+	}
+
 
 /**
  * Updates the Aco Tree with new controller actions.
